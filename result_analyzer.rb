@@ -9,11 +9,11 @@ input_dir = ARGV[0]
   'origin_responses',
   'replayed_responses'
 ].map do |kind|
-  Dir[File.join(input_dir, kind, '*')]
+  File.join(input_dir, kind)
 end.map do |path|
-  path.map do |f|
-    request_id = f.split('/').last
-    [request_id, JSON.parse(File.read(f))]
+  File.open(path).each_line.lazy.map do |line|
+    json_data = JSON.parse(line.strip)
+    [json_data['request_id'], json_data]
   end.to_h
 end
 

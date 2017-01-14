@@ -9,19 +9,18 @@ class MessageHandler
   def initialize(output_dir, log_level = :info)
     FileUtils.mkdir_p output_dir
     @output_dir = output_dir
-    @origin_request_path, @origin_response_path, @replayed_respone_path = [
+    @origin_requests, @origin_responses, @replayed_respones = [
       'origin_requests',
       'origin_responses',
       'replayed_responses'
     ].map do |kind|
-      path = File.join(@output_dir, kind)
-      FileUtils.mkdir_p path
-      path.freeze
+      fp = File.join(@output_dir, kind)
+      File.new(fp, 'w')
     end
 
     @logger = Logging.logger[self]
     @logger.level = log_level
-    log_path = File.join(output_dir, 'log')
+    log_path = File.join(@output_dir, '.log')
     @logger.add_appenders Logging.appenders.file(log_path)
   end
 
@@ -45,13 +44,9 @@ class MessageHandler
       @logger.debug('prepare json data')
       replace_invalid_string(parsed_data.merge(extra_info)).to_json
     end.map do |json_data|
-      save_path = get_save_path(payload_type, request_id)
-
-      @logger.debug("start to write result into #{save_path}")
-
-      File.open(save_path, 'w') do |f|
-        f.write(json_data)
-      end
+      @logger.debug("start to write result")
+      save_file = get_save_file(payload_type)
+      save_file.write(json_data)
 
       @logger.info("Handle message done: #{request_id}")
       :ok
@@ -63,16 +58,19 @@ class MessageHandler
 
   private
 
-  def get_save_path(payload_type, request_id)
+  def get_save_file(payload_type)
     selected = case payload_type.to_i
     when 1
-      @origin_request_path
+      @origin_requests
     when 2
-      @origin_response_path
+      @origin_responses
     when 3
-      @replayed_respone_path
+      @replayed_respones
     end
-    File.join(selected, request_id)
+    if rand > 0.5
+      selected.flush
+    end
+    selected
   end
 
   def replace_invalid_string(obj)
