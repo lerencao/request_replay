@@ -1,0 +1,23 @@
+GEM
+  remote: https://gems.ruby-china.org/
+  specs:
+    divergent (0.4.0)
+    http-parser-lite (0.6.0)
+    json (2.0.3)
+    little-plugger (1.1.4)
+    logging (2.1.0)
+      little-plugger (~> 1.1)
+      multi_json (~> 1.10)
+    multi_json (1.12.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  divergent
+  http-parser-lite
+  json
+  logging
+
+BUNDLED WITH
+   1.13.6
