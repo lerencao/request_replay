@@ -46,7 +46,7 @@ class MessageHandler
     end.map do |json_data|
       @logger.debug("start to write result")
       save_file = get_save_file(payload_type)
-      save_file.write(json_data)
+      save_file.puts(json_data)
 
       @logger.info("Handle message done: #{request_id}")
       :ok
