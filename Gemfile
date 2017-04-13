@@ -7,3 +7,5 @@ gem 'json'
 
 gem 'divergent'
 # gem "rails"
+gem 'mongo'
+gem 'dotenv'

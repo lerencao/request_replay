@@ -3,28 +3,21 @@ require 'logging'
 require 'json'
 require 'divergent'
 
+
 require_relative './parser'
 
 class MessageHandler
-  def initialize(output_dir, log_level = :info)
-    FileUtils.mkdir_p output_dir
-    @output_dir = output_dir
-    @origin_requests, @origin_responses, @replayed_respones = [
-      'origin_requests',
-      'origin_responses',
-      'replayed_responses'
-    ].map do |kind|
-      fp = File.join(@output_dir, kind)
-      File.new(fp, 'w')
-    end
+  def initialize(mongo, log_path, log_level = :info)
+    @collection = mongo['goreplay']
+    @collection.indexes.create_one({ 'uuid' => 1 }, unique: true)
 
     @logger = Logging.logger[self]
     @logger.level = log_level
-    log_path = File.join(@output_dir, '.log')
     @logger.add_appenders Logging.appenders.file(log_path)
   end
 
   def on_message(http_data, header)
+    @logger.info("#{header}")
     payload_type, request_id, timestamp, latency = header.split(' ')
     payload_type = payload_type.to_i
     timestamp = timestamp.to_i / 1_000_000_000.0
@@ -41,12 +34,24 @@ class MessageHandler
       }
       extra_info[:latency] = latency if latency
 
-      @logger.debug('prepare json data')
-      replace_invalid_string(parsed_data.merge(extra_info)).to_json
-    end.map do |json_data|
-      @logger.debug("start to write result")
-      save_file = get_save_file(payload_type)
-      save_file.puts(json_data)
+      parsed_data.merge(extra_info)
+    end.map do |data|
+      field_name = case payload_type.to_i
+      when 1
+        'origin_request'
+      when 2
+        'origin_response'
+      when 3
+        'replayed_response'
+      else
+        'unknown'
+      end
+
+      @collection.update_one(
+        { 'uuid' => data[:request_id] },
+        { '$set' => { field_name => data } },
+        upsert: true
+      )
 
       @logger.info("Handle message done: #{request_id}")
       :ok
@@ -57,21 +62,6 @@ class MessageHandler
   end
 
   private
-
-  def get_save_file(payload_type)
-    selected = case payload_type.to_i
-    when 1
-      @origin_requests
-    when 2
-      @origin_responses
-    when 3
-      @replayed_respones
-    end
-    if rand > 0.5
-      selected.flush
-    end
-    selected
-  end
 
   def replace_invalid_string(obj)
     case obj
