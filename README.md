@@ -5,9 +5,14 @@
 
 ``` shell
 bundle install
-gor --input-file [your request-response file] \
+vim .env
+gor --input-raw :3000 \
+    --input-raw-track-response \
     --output-http "http://example.com" \
-    --middleware "./req_resp_recorder.rb [output_dir]"
+    --middleware "$(which ruby) ./req_resp_recorder.rb" \
+    --http-disallow-url /nonsense \
+    --stats \
+    --verbose
 ```
 
 ### Analyze ###
