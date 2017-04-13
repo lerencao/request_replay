@@ -20,3 +20,7 @@ gor --input-raw :3000 \
 ``` shell
 bundle exec ruby result_analyzer.rb [input_dir]
 ```
+
+### TODO ###
+
+rewrite it in go, and make it a plugin of goreplay
